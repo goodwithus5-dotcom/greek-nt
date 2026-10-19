@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#18213A">
+<title>Greek New Testament Reader</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+
+<style>
+:root{
+  --paper:#EDEFE8; --surface:#F8F9F4; --ink:#18213A; --muted:#566074;
+  --line:#C9CEC0; --lapis:#2A4A8C; --lapis-tint:#DCE4F4; --rubric:#B0231B;
+  --greek:"Gentium Plus","Gentium Book Plus","Noto Serif","Cambria","Times New Roman",serif;
+  --ui:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 var(--ui)}
+body.sheet-open{padding-bottom:62vh}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--lapis);outline-offset:2px}
+
+header{padding:18px 16px 10px;background:var(--ink);color:#F1F3EC}
+header h1{margin:0;font:400 1.55rem/1.2 var(--greek)}
+header h1 .gk{font-size:1.05rem;color:#B9C2D8;white-space:nowrap}
+header p{margin:4px 0 0;font-size:.88rem;color:#B9C2D8}
+
+.tabs{position:sticky;top:0;z-index:5;display:flex;background:var(--ink);padding:0 8px;border-top:1px solid #2E3957}
+.tabs button{flex:1;background:none;border:0;border-bottom:3px solid transparent;padding:12px 6px;color:#B9C2D8;font-weight:600;min-height:48px}
+.tabs button[aria-selected="true"]{color:#fff;border-bottom-color:#E8D9A8}
+
+main{max-width:720px;margin:0 auto;padding:16px}
+.picker{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px}
+.picker button{flex:0 0 auto;min-width:46px;min-height:46px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-weight:600}
+.picker button[aria-pressed="true"]{background:var(--lapis);border-color:var(--lapis);color:#fff}
+
+.verse{display:flex;gap:10px;align-items:flex-start}
+.vnum{font:700 1.5rem/1.2 var(--greek);color:var(--rubric);padding-top:8px;min-width:1.2em}
+.words{display:flex;flex-wrap:wrap;gap:8px 5px}
+.word{display:flex;flex-direction:column;align-items:center;min-width:44px;padding:6px 8px 7px;border:1px solid var(--line);border-radius:8px;background:var(--surface);text-align:center}
+.word[aria-pressed="true"]{border-color:var(--lapis);background:var(--lapis-tint)}
+.word .g{font:1.4rem/1.25 var(--greek)}
+.word .pn{color:var(--muted)}
+.word .t{font-size:.78rem;font-style:italic;color:var(--muted)}
+.word .e{font-size:.8rem;line-height:1.25}
+
+.english{margin:18px 0 6px;padding:12px 14px;border-left:4px solid var(--rubric);background:var(--surface);font:1.08rem/1.55 var(--greek)}
+.hint{margin:10px 0 0;font-size:.9rem;color:var(--muted)}
+
+details{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin:0 0 10px}
+summary{padding:13px 14px;font-weight:600;cursor:pointer;min-height:48px}
+details[open] summary{border-bottom:1px solid var(--line)}
+details .body{padding:12px 14px 14px}
+details .body p{margin:0 0 10px}
+details .body p:last-child{margin-bottom:0}
+.greekinline{font-family:var(--greek);font-size:1.08em}
+h2{font-size:1.05rem;margin:18px 0 10px}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+td,th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left;vertical-align:top}
+
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:10;max-height:66vh;overflow:auto;background:var(--surface);
+  border-top:3px solid var(--lapis);border-radius:16px 16px 0 0;padding:14px 16px 28px;
+  box-shadow:0 -6px 24px rgba(24,33,58,.18);transform:translateY(105%);visibility:hidden;
+  transition:transform .22s ease,visibility 0s .22s}
+#sheet.open{transform:none;visibility:visible;transition:transform .22s ease,visibility 0s}
+@media (prefers-reduced-motion:reduce){#sheet,#sheet.open{transition:none}}
+.sheet-in{max-width:720px;margin:0 auto}
+.s-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.s-greek{font:2rem/1.2 var(--greek)}
+.s-sub{color:var(--muted);font-size:.95rem}
+.close{flex:0 0 auto;min-height:44px;min-width:44px;border:1px solid var(--line);border-radius:10px;background:var(--paper);font-weight:600}
+.s-sec{margin-top:16px}
+.s-sec h3{margin:0 0 6px;font-size:1rem}
+.parse{margin:0}
+.parse .row{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+.parse dt{flex:0 0 5.6rem;color:var(--muted);font-size:.92rem}
+.parse dd{margin:0}
+.parse dd span{display:block;font-size:.88rem;color:var(--muted)}
+.sylrow{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
+.syl{min-width:56px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;text-align:center;background:var(--paper)}
+.syl .st{font:1.6rem/1.3 var(--greek)}
+.syl .sl{font-size:.74rem;color:var(--muted)}
+.acc{color:var(--rubric);font-weight:700}
+.br{text-decoration:underline;text-decoration-color:var(--lapis);text-decoration-thickness:2px;text-underline-offset:5px}
+.legend{font-size:.84rem;color:var(--muted);margin:0 0 8px}
+.note{font-size:.93rem;margin:0 0 8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>According to John <span class="gk">(Κατὰ Ἰωάννην)</span></h1>
+  <p>Greek New Testament Reader. Test version: John 1:1–18</p>
+</header>
+<nav class="tabs" role="tablist" aria-label="Sections">
+  <button role="tab" id="tab-read" aria-selected="true" data-tab="read">Read</button>
+  <button role="tab" id="tab-faq" aria-selected="false" data-tab="faq">Verse FAQ</button>
+  <button role="tab" id="tab-guide" aria-selected="false" data-tab="guide">Guide</button>
+</nav>
+<main id="app"></main>
+<aside id="sheet" aria-label="Word details"></aside>
+
+<script>
+//<core>
+const D={acute:'\u0301',grave:'\u0300',circ:'\u0342',smooth:'\u0313',rough:'\u0314',iota:'\u0345',diaer:'\u0308'};
+const VOWELS='αεηιουω';
+const DIPH=['αι','ει','οι','υι','αυ','ευ','ου','ηυ','ωυ'];
+const ONSETS=['βλ','γλ','κλ','πλ','τλ','φλ','χλ','θλ','βρ','γρ','δρ','κρ','πρ','τρ','φρ','χρ','θρ','γν','κν','πν','μν','στ','σκ','σπ','σφ','σχ','σθ','σμ'];
+const TR={α:'a',β:'b',γ:'g',δ:'d',ε:'e',ζ:'z',η:'ē',θ:'th',ι:'i',κ:'k',λ:'l',μ:'m',ν:'n',ξ:'x',ο:'o',π:'p',ρ:'r',σ:'s',ς:'s',τ:'t',υ:'u',φ:'ph',χ:'ch',ψ:'ps',ω:'ō'};
+const POSN=['ultima','penult','antepenult'];
+
+function lettersOf(word){
+  const out=[];
+  for(const ch of word.normalize('NFD')){
+    if(/[\u0300-\u036f]/.test(ch)){ if(out.length) out[out.length-1].marks.push(ch); }
+    else if(/[\u0370-\u03ff]/.test(ch)) out.push({raw:ch,b:ch.toLowerCase(),marks:[]});
+  }
+  return out;
+}
+
+function analyze(word){
+  const L=lettersOf(word);
+  const elided=/[\u1FBD\u2019\u02BC']/.test(word);
+  const nuc=[];
+  for(let i=0;i<L.length;i++){
+    if(VOWELS.includes(L[i].b)){
+      let e=i; const n=L[i+1];
+      if(n && VOWELS.includes(n.b) && !n.marks.includes(D.diaer) && DIPH.includes(L[i].b+n.b)) e=i+1;
+      nuc.push([i,e]); i=e;
+    }
+  }
+  const take=k=>{
+    if(k===0) return 0;
+    const cl=nuc[k][0]-nuc[k-1][1]-1;
+    if(cl<=0) return 0;
+    if(cl===1) return 1;
+    const pair=L[nuc[k][0]-2].b+L[nuc[k][0]-1].b;
+    return ONSETS.includes(pair)?2:1;
+  };
+  const syl=nuc.map((n,k)=>{
+    const from=k===0?0:n[0]-take(k);
+    const to=k===nuc.length-1?L.length-1:nuc[k+1][0]-take(k+1)-1;
+    const letters=L.slice(from,to+1);
+    const marks=letters.flatMap(x=>x.marks);
+    return {
+      letters,
+      accent:marks.includes(D.acute)?'acute':marks.includes(D.grave)?'grave':marks.includes(D.circ)?'circumflex':null,
+      breathing:marks.includes(D.rough)?'rough':marks.includes(D.smooth)?'smooth':null
+    };
+  });
+  const accentIdx=syl.findIndex(s=>s.accent);
+  const allMarks=L.flatMap(x=>x.marks);
+  const breathing=allMarks.includes(D.rough)?'rough':allMarks.includes(D.smooth)?'smooth':null;
+  const iota=allMarks.includes(D.iota);
+
+  let t='';
+  for(let i=0;i<L.length;i++){
+    const x=L[i]; let s=TR[x.b]||'';
+    const nx=L[i+1];
+    if(x.b==='γ' && nx && 'γκξχ'.includes(nx.b)) s='n';
+    t+=s; if(x.marks.includes(D.iota)) t+='i';
+  }
+  if(breathing==='rough') t=(L[0].b==='ρ')?'rh'+t.slice(1):'h'+t;
+  if(elided) t+="'";
+  if(L[0] && L[0].raw!==L[0].b) t=t.charAt(0).toUpperCase()+t.slice(1);
+
+  return {syl,n:syl.length,accentIdx,accents:syl.map((x,i)=>x.accent?{i,type:x.accent}:null).filter(Boolean),accent:accentIdx>=0?syl[accentIdx].accent:null,
+          fromEnd:accentIdx>=0?syl.length-1-accentIdx:null,breathing,iota,elided,translit:t};
+}
+
+/* ---------- Data: John 1:1-5 ---------- */
+const W=(g,l,e,pos,o={})=>({g,l,e,pos,...o});
+const A=(w,after)=>({...w,after});
+const EN=W('Ἐν','ἐν','in','prep',{gov:'dative',atonic:true});
+const en=W('ἐν','ἐν','in','prep',{gov:'dative',atonic:true});
+const KAI=W('καὶ','καί','and','conj');
+const O=W('ὁ','ὁ','the','art',{c:'n',n:'s',gd:'m',atonic:true});
+const HE=W('ἡ','ὁ','the','art',{c:'n',n:'s',gd:'f',atonic:true});
+const TO=W('τὸ','ὁ','the','art',{c:'n',n:'s',gd:'n'});
+const TON=W('τὸν','ὁ','the','art',{c:'a',n:'s',gd:'m'});
+const TE=W('τῇ','ὁ','the','art',{c:'d',n:'s',gd:'f'});
+const TWN=W('τῶν','ὁ','the','art',{c:'g',n:'p',gd:'m'});
+const LOGOS=W('λόγος','λόγος','word','n',{c:'n',n:'s',gd:'m'});
+const ARCHE=W('ἀρχῇ','ἀρχή','beginning','n',{c:'d',n:'s',gd:'f'});
+const HN=W('ἦν','εἰμί','was','v',{t:'impf',v:'act',m:'ind',p:3,n:'s',note:'εἰμί (“to be”) has no separate voice forms, so it is listed as active.'});
+const PROS=W('πρὸς','πρός','with (toward)','prep',{gov:'accusative'});
+const THEON=W('θεόν','θεός','God','n',{c:'a',n:'s',gd:'m'});
+const THEOS=W('θεὸς','θεός','God','n',{c:'n',n:'s',gd:'m'});
+const OUTOS=W('οὗτος','οὗτος','this one / he','dem',{c:'n',n:'s',gd:'m'});
+const PANTA=W('πάντα','πᾶς','all things','adj',{c:'n',n:'p',gd:'n',note:'An adjective used as a noun: “all things”.'});
+const DI=W('δι\u1FBD','διά','through','prep',{gov:'genitive'});
+const AUTOU=W('αὐτοῦ','αὐτός','him','pron',{c:'g',n:'s',gd:'m',per:3});
+const AUTW=W('αὐτῷ','αὐτός','him','pron',{c:'d',n:'s',gd:'m',per:3});
+const AUTO=W('αὐτὸ','αὐτός','it','pron',{c:'a',n:'s',gd:'n',per:3});
+const EGENETO=W('ἐγένετο','γίνομαι','came to be','v',{t:'aor',v:'mid',m:'ind',p:3,n:'s',dep:true,note:'γίνομαι is a deponent verb: it uses middle forms with an active meaning (“came to be”).'});
+const CHORIS=W('χωρὶς','χωρίς','apart from','prep',{gov:'genitive'});
+const OUDE=W('οὐδὲ','οὐδέ','not even','adv');
+const HEN=W('ἓν','εἷς','one (thing)','adj',{c:'n',n:'s',gd:'n',note:'The number “one” used as a noun: “one thing”.'});
+const HO=W('ὃ','ὅς','that which','rel',{c:'n',n:'s',gd:'n'});
+const GEGONEN=W('γέγονεν','γίνομαι','has come to be','v',{t:'perf',v:'act',m:'ind',p:3,n:'s',note:'The perfect of γίνομαι uses active forms (γέγονα), so it is listed as active.'});
+const ZOE=W('ζωὴ','ζωή','life','n',{c:'n',n:'s',gd:'f'});
+const PHOS=W('φῶς','φῶς','light','n',{c:'n',n:'s',gd:'n'});
+const ANTHR=W('ἀνθρώπων','ἄνθρωπος','people','n',{c:'g',n:'p',gd:'m'});
+const SKOTIAD=W('σκοτίᾳ','σκοτία','darkness','n',{c:'d',n:'s',gd:'f'});
+const SKOTIAN=W('σκοτία','σκοτία','darkness','n',{c:'n',n:'s',gd:'f'});
+const PHAINEI=W('φαίνει','φαίνω','shines','v',{t:'pres',v:'act',m:'ind',p:3,n:'s'});
+const OU=W('οὐ','οὐ','not','adv',{atonic:true});
+const KATEL=W('κατέλαβεν','καταλαμβάνω','overcame','v',{t:'aor',v:'act',m:'ind',p:3,n:'s',note:'This verb can also mean “grasped” or “understood”, so translators differ.'});
+
+const NN=(g,l,e,c,n,gd,o={})=>W(g,l,e,'n',{c,n,gd,...o});
+const AJ=(g,l,e,c,n,gd,o={})=>W(g,l,e,'adj',{c,n,gd,...o});
+const AR=(g,c,n,gd,o={})=>W(g,'ὁ','the','art',{c,n,gd,...o});
+const PP=(g,l,e,gov,o={})=>W(g,l,e,'prep',{gov,...o});
+const VB=(g,l,e,t,v,m,p,n,o={})=>W(g,l,e,'v',{t,v,m,p,n,...o});
+const PT=(g,l,e,t,v,c,n,gd,o={})=>W(g,l,e,'v',{t,v,m:'ptc',c,n,gd,...o});
+const IF=(g,l,e,t,v,o={})=>W(g,l,e,'v',{t,v,m:'inf',...o});
+const EIS=PP('εἰς','εἰς','into','accusative',{atonic:true});
+const EK=PP('ἐκ','ἐκ','from','genitive',{atonic:true});
+const OUK=W('οὐκ','οὐ','not','adv',{atonic:true});
+const IHNA=W('ἵνα','ἵνα','so that','conj');
+const PERI=PP('περὶ','περί','about','genitive');
+const TOUN=AR('τοῦ','g','s','n');
+const TOUM=AR('τοῦ','g','s','m');
+const MARTYR=VB('μαρτυρήσῃ','μαρτυρέω','he might testify','aor','act','subj',3,'s');
+const FOTOS=NN('φωτός','φῶς','light','g','s','n');
+const KOSMOS=NN('κόσμος','κόσμος','world','n','s','m');
+const AUTON=W('αὐτὸν','αὐτός','him','pron',{c:'a',n:'s',gd:'m',per:3});
+const ELTHEN=VB('ἦλθεν','ἔρχομαι','came','aor','act','ind',3,'s',{note:'The aorist of ἔρχομαι is built on a different stem (ἐλθ-), so it looks unlike the present.'});
+const MOU=W('μου','ἐγώ','me / my','pron',{c:'g',n:'s',per:1,enclitic:true});
+const ALL=W('ἀλλ\u1FBD','ἀλλά','but','conj');
+const OTI=W('ὅτι','ὅτι','because','conj');
+const PANTES=AJ('πάντες','πᾶς','all','n','p','m');
+const THELEMA=NN('θελήματος','θέλημα','will','g','s','n');
+const OUDEN=W('οὐδὲ','οὐδέ','nor','adv');
+const EKEINOS=W('ἐκεῖνος','ἐκεῖνος','that one','dem',{c:'n',n:'s',gd:'m'});
+
+const VERSES={
+1:{en:'In the beginning was the Word, and the Word was with God, and the Word was God.',
+  words:[EN,ARCHE,HN,O,A(LOGOS,','),KAI,O,LOGOS,HN,PROS,TON,A(THEON,','),KAI,THEOS,HN,O,A(LOGOS,'.')],
+  faq:[
+   ['Why is ἦν imperfect, and what does that suggest?','The imperfect tense pictures a past state or action as ongoing, with no stated starting point. So “was” shows the Word already existing “in the beginning”. Compare ἐγένετο in verse 3, an aorist meaning “came to be”. The mood is indicative (a plain statement of fact), the person is 3rd and the number singular, matching the singular subject ὁ λόγος. εἰμί has no separate voice forms, so it is labelled active.'],
+   ['Which noun is the subject in θεὸς ἦν ὁ λόγος?','Both nouns are nominative, so the article is the clue. ὁ λόγος has the article, which marks it as the subject. θεός has none and describes the Word. Putting θεός first gives it emphasis. Scholars discuss how much to read into the missing article, but the grammar itself settles which noun is the subject.'],
+   ['Why is θεὸς grave but θεόν acute?','A final acute accent is written as a grave when another word follows with no punctuation. θεὸς is followed by ἦν, so it is grave. θεόν is followed by a comma, so it stays acute. The same rule explains τὸν (before θεόν) and καὶ (before ὁ or θεὸς).'],
+   ['What do the breathing marks on Ἐν and ὁ tell me?','Ἐν has a smooth breathing: no “h” sound, so it is read “En”. ὁ has a rough breathing: an “h” sound, so it is read “ho”. Every word that begins with a vowel or ρ carries one of the two marks.'],
+   ['Why does πρὸς take the accusative?','The preposition decides the case. With the accusative, πρός basically means “toward”. Here it describes being in relationship with someone, so English uses “with”.']
+  ]},
+2:{en:'He was in the beginning with God.',
+  words:[OUTOS,HN,en,ARCHE,PROS,TON,A(THEON,'.')],
+  faq:[
+   ['What kind of word is οὗτος?','A demonstrative pronoun meaning “this one”. It is nominative singular masculine, matching ὁ λόγος in verse 1, so it points back to the Word: “this one”, or simply “he”.'],
+   ['Why a circumflex on οὗ, and what does the breathing do?','The diphthong ου is long and the last syllable -ος is short. When the second-to-last syllable is long and the last is short, an accent there is a circumflex. The rough breathing adds an “h”: the word is read “houtos”.'],
+   ['Why is ἦν used again?','It is the same form as in verse 1: imperfect, indicative, 3rd person singular, “was”. Verse 2 repeats ideas from verse 1 (ἐν ἀρχῇ and πρὸς τὸν θεόν) and gathers them into one sentence.']
+  ]},
+3:{en:'All things came into being through him, and apart from him not even one thing that has come into being came into being.',
+  words:[PANTA,DI,AUTOU,A(EGENETO,','),KAI,CHORIS,AUTOU,EGENETO,OUDE,HEN,HO,A(GEGONEN,'.')],
+  faq:[
+   ['Why is ἐγένετο singular when πάντα is plural?','A neuter plural subject usually takes a singular verb in Greek. πάντα is neuter plural, and ἐγένετο is 3rd person singular.'],
+   ['What do aorist and middle mean in ἐγένετο?','The aorist views the event as a whole, here a past event. The ἐ- at the start (the augment) marks past time. The ending is middle, but γίνομαι is a deponent verb, which means it uses middle forms with an active meaning: “came to be”.'],
+   ['How is γέγονεν different from ἐγένετο?','γέγονεν is perfect: a past event whose result still stands, “has come to be”. The perfect is marked by reduplication (γε-) and a change of the stem vowel (γεν to γον). The perfect of γίνομαι uses active forms.'],
+   ['Why is there an apostrophe in δι᾽?','This is elision. The final α of διά was dropped before αὐτοῦ, which begins with a vowel, and the apostrophe marks the loss. The accent goes with the dropped vowel. Both διά and χωρὶς take the genitive here: “through him” and “apart from him”. αὐτοῦ is a 3rd person pronoun, genitive singular masculine.'],
+   ['Why is it ἓν with a grave here?','ὃ follows with no punctuation, so the acute on ἕν becomes a grave. Some editions put the full stop after ἕν and start verse 4 with ὃ γέγονεν. In that reading the accent stays acute: ἕν. A change of accent can reveal how an editor punctuated the verse.']
+  ]},
+4:{en:'In him was life, and the life was the light of people.',
+  words:[en,AUTW,ZOE,A(HN,','),KAI,HE,ZOE,HN,TO,PHOS,TWN,A(ANTHR,'·')],
+  faq:[
+   ['Why is ζωὴ grave?','ἦν follows it with no punctuation, so the final acute of ζωή is written as a grave. The same rule applies to both occurrences.'],
+   ['What do the article forms do?','The article agrees with its noun in case, number and gender: ἡ ζωή is nominative singular feminine, τὸ φῶς nominative singular neuter, and τῶν ἀνθρώπων genitive plural masculine. Reading the article tells you the grammar of the noun after it.'],
+   ['Why is there a circumflex on φῶς?','The vowel ω is long, and in a one-syllable word the accent sits on that vowel. A long vowel or diphthong is what a circumflex needs. τῶν has the same accent for the same reason.'],
+   ['Why is the accent on ἀνθρώπων acute and not circumflex?','The accent is on the second-to-last syllable, and the last syllable -ων is long. A long last syllable allows only an acute on the second-to-last, whereas οὗτος (verse 2) has a short last syllable and so takes a circumflex. The genitive τῶν ἀνθρώπων means “of people”.'],
+   ['What is the raised dot at the end?','The Greek high point works like an English colon or semicolon. It marks a pause that is stronger than a comma.']
+  ]},
+5:{en:'And the light shines in the darkness, and the darkness did not overcome it.',
+  words:[KAI,TO,PHOS,en,TE,SKOTIAD,A(PHAINEI,','),KAI,HE,SKOTIAN,AUTO,OU,A(KATEL,'.')],
+  faq:[
+   ['What is the difference between φαίνει and κατέλαβεν?','φαίνει is present active indicative: the light keeps shining. κατέλαβεν is aorist active indicative: a simple event, “did not overcome”. The tenses contrast the ongoing shining with a single outcome.'],
+   ['Does κατέλαβεν mean “overcome” or “grasp”?','Both meanings are possible for καταλαμβάνω, and English translations differ. The grammar is the same either way. Notice the augment ἐ- sits between the prefix κατα- and the stem: κατ-έ-λαβ-εν.'],
+   ['Why οὐ and not μή?','οὐ negates a statement of fact in the indicative. μή is used with most other moods. οὐ has no accent of its own (it is a proclitic), and its smooth breathing sits on the υ because ου is a diphthong.'],
+   ['Why is αὐτὸ grave, and what does it refer to?','οὐ follows with no punctuation, so the acute becomes grave. αὐτό is neuter accusative singular, 3rd person: “it”. A pronoun matches the gender of what it refers to, and φῶς is neuter.'],
+   ['What is the little iota under the vowel in σκοτίᾳ and τῇ?','It is the iota subscript, a silent iota that is part of the spelling. Here it marks the dative singular ending. The dative after ἐν gives “in the darkness”.']
+  ]},
+6:{en:'There came a man sent from God; his name was John.',
+  words:[{...EGENETO,g:'Ἐγένετο'},A(NN('ἄνθρωπος','ἄνθρωπος','man','n','s','m'),','),PT('ἀπεσταλμένος','ἀποστέλλω','sent','perf','pas','n','s','m'),PP('παρὰ','παρά','from','genitive'),A(NN('θεοῦ','θεός','God','g','s','m'),','),NN('ὄνομα','ὄνομα','name','n','s','n'),{...AUTW,e:'to him'},A(NN('Ἰωάννης','Ἰωάννης','John','n','s','m'),'·')],
+  faq:[
+   ['What is ἀπεσταλμένος?','A perfect passive participle of ἀποστέλλω, “having been sent”. It is nominative singular masculine, agreeing with ἄνθρωπος. The perfect describes a completed action with a lasting result, and the passive means the man received the action (God sent him). The ε after the prefix ἀπ- is the perfect reduplication. A participle has tense and voice, and takes case, number and gender instead of person.'],
+   ['Why ἐγένετο here, when verse 1 used ἦν?','ἦν (imperfect) describes the Word as already existing. ἐγένετο (aorist) describes an event: a man appeared on the scene. It is the same verb as in verse 3, aorist middle deponent: middle form, active meaning.'],
+   ['What does ὄνομα αὐτῷ mean?','Literally “a name to him”. The dative αὐτῷ shows possession: “his name was John”. There is no verb, so the sense of “was” is understood.'],
+   ['Why a grave on παρὰ and an acute on θεοῦ?','παρὰ is followed by θεοῦ with no punctuation, so its acute became a grave. θεοῦ ends in a circumflex, which does not change. With the genitive, παρά means “from (the side of)”.']
+  ]},
+7:{en:'This man came as a witness, to testify about the light, so that all might believe through him.',
+  words:[OUTOS,ELTHEN,EIS,NN('μαρτυρίαν','μαρτυρία','testimony','a','s','f'),IHNA,MARTYR,PERI,TOUN,A(FOTOS,','),IHNA,PANTES,VB('πιστεύσωσιν','πιστεύω','might believe','aor','act','subj',3,'p'),DI,A(AUTOU,'.')],
+  faq:[
+   ['What are μαρτυρήσῃ and πιστεύσωσιν?','Both are aorist active subjunctive. After ἵνα the subjunctive expresses purpose: “so that he might testify”, “so that all might believe”. The σ marks the aorist. The long vowel in the ending (η, ω) is a sign of the subjunctive. μαρτυρήσῃ is 3rd singular and πιστεύσωσιν is 3rd plural, agreeing with πάντες.'],
+   ['Why does ἦλθεν look so different from ἔρχομαι?','Some verbs build their tenses from different stems. The aorist of ἔρχομαι uses ἐλθ-, and the past-tense augment lengthens it to ἦλθ-. ἦλθεν is aorist active indicative 3rd singular, “came”. The circumflex is there because ἦ is long and the last syllable is short.'],
+   ['Why is περὶ grave and φωτός acute?','περὶ is followed by τοῦ with no punctuation, so it is grave. φωτός is followed by a comma, so its acute stays.'],
+   ['What is the breathing on ἵνα?','It has a rough breathing, so it is read “hina”. The same word begins the second purpose clause.']
+  ]},
+8:{en:'That man was not the light, but came so that he might testify about the light.',
+  words:[OUK,HN,EKEINOS,TO,PHOS,ALL,IHNA,MARTYR,PERI,TOUN,A(FOTOS,'.')],
+  faq:[
+   ['Why is it οὐκ here, but οὐ in other verses?','οὐ changes form before a vowel. It becomes οὐκ before a vowel with a smooth breathing (οὐκ ἦν), and οὐχ before a rough breathing. Before a consonant it stays οὐ. It has no accent of its own: it is a proclitic.'],
+   ['What is ἀλλ᾽?','It is ἀλλά “but” with the final α dropped (elision) before ἵνα, which begins with a vowel. The apostrophe marks the loss.'],
+   ['Is there a verb missing after ἀλλ᾽ ἵνα?','Yes. The clause has no main verb of its own. A verb like ἦλθεν from verse 7 is understood: “but [he came] so that he might testify”.'],
+   ['Which word is the subject: ἐκεῖνος or τὸ φῶς?','ἐκεῖνος, “that one”, is the subject. It is a demonstrative pronoun, nominative singular masculine, pointing to John. τὸ φῶς says what he was not. The circumflex on εῖ is there because the diphthong is long and the last syllable is short.']
+  ]},
+9:{en:'The true light, which gives light to every person, was coming into the world.',
+  words:[{...HN,g:'Ἦν'},TO,PHOS,TO,A(AJ('ἀληθινόν','ἀληθινός','true','n','s','n'),','),{...HO,e:'which'},VB('φωτίζει','φωτίζω','gives light to','pres','act','ind',3,'s'),AJ('πάντα','πᾶς','every','a','s','m'),A(NN('ἄνθρωπον','ἄνθρωπος','person','a','s','m'),','),PT('ἐρχόμενον','ἔρχομαι','coming','pres','mid','a','s','m',{dep:true,note:'This form could be accusative singular masculine (describing πάντα ἄνθρωπον) or nominative singular neuter (describing τὸ φῶς). Translators differ.'}),EIS,TON,A(NN('κόσμον','κόσμος','world','a','s','m'),'.')],
+  faq:[
+   ['What does ἐρχόμενον describe?','It is a present participle of ἔρχομαι, a deponent verb (middle form, active meaning). The form fits two readings: accusative singular masculine, describing “every person coming into the world”, or nominative singular neuter, describing “the light was coming into the world”. Both are grammatically possible, which is why translations differ.'],
+   ['What is the pattern τὸ φῶς τὸ ἀληθινόν?','The article is repeated before the adjective: “the light, the true one”. That is the attributive position, and it means “the true light”. The adjective agrees with φῶς: nominative singular neuter.'],
+   ['Why is ὃ nominative when it means “which”?','ὃ is a relative pronoun. Its gender and number match its antecedent τὸ φῶς (neuter singular), but its case comes from its job in its own clause: it is the subject of φωτίζει, so it is nominative. It has a rough breathing and a grave accent (another word follows).'],
+   ['Why is ἀληθινόν acute?','A comma follows it, so the final acute does not become a grave.']
+  ]},
+10:{en:'He was in the world, and the world came into being through him, and the world did not know him.',
+  words:[en,AR('τῷ','d','s','m'),NN('κόσμῳ','κόσμος','world','d','s','m'),A(HN,','),KAI,O,KOSMOS,DI,AUTOU,A(EGENETO,','),KAI,O,KOSMOS,AUTON,OUK,A(VB('ἔγνω','γινώσκω','knew','aor','act','ind',3,'s'),'.')],
+  faq:[
+   ['How do I tell the three uses of κόσμος apart?','By case. After ἐν, κόσμῳ is dative: “in the world”. In the next two clauses ὁ κόσμος is nominative, the subject. Word order does not tell you who does what in Greek; case does. In the last clause αὐτὸν is accusative, the object, and it comes first for emphasis.'],
+   ['What is ἔγνω?','Aorist active indicative 3rd singular of γινώσκω: “knew”, or “recognised”. The aorist stem is γνω-, not made by adding σ. οὐκ negates it because οὐ is used with the indicative.'],
+   ['Why is αὐτὸν grave?','οὐκ follows with no punctuation, so the acute became a grave. The verb ἐγένετο is the same aorist middle deponent form as in verse 3.']
+  ]},
+11:{en:'He came to his own, and his own people did not receive him.',
+  words:[EIS,AR('τὰ','a','p','n'),AJ('ἴδια','ἴδιος','own things','a','p','n'),A(ELTHEN,','),KAI,AR('οἱ','n','p','m',{atonic:true}),AJ('ἴδιοι','ἴδιος','own people','n','p','m'),AUTON,OU,A(VB('παρέλαβον','παραλαμβάνω','received','aor','act','ind',3,'p'),'.')],
+  faq:[
+   ['What are τὰ ἴδια and οἱ ἴδιοι?','The adjective ἴδιος, “own”, is used as a noun. With the neuter plural article it means “his own things” (home). With the masculine plural article it means “his own people”. Gender and number show the difference: τὰ ἴδια is accusative plural neuter, and οἱ ἴδιοι is nominative plural masculine.'],
+   ['Why οὐ here and οὐκ in the last verse?','The word after it begins with a consonant (παρέλαβον), so it stays οὐ. Before a vowel with a smooth breathing it becomes οὐκ.'],
+   ['What is παρέλαβον?','Aorist active indicative 3rd plural of παραλαμβάνω: “received”. The past-tense augment goes between the prefix and the stem: παρ-έ-λαβ-ον, and the prefix παρα loses its final vowel. The -ον ending is 3rd plural here, because the subject οἱ ἴδιοι is plural.'],
+   ['What is the breathing on οἱ?','Rough, on the second vowel of the diphthong, so it is read “hoi”. It has no accent of its own: it is a proclitic.']
+  ]},
+12:{en:'But to all who did receive him, he gave the right to become children of God, to those who believe in his name,',
+  words:[W('ὅσοι','ὅσος','as many as','rel',{c:'n',n:'p',gd:'m'}),W('δὲ','δέ','but','conj'),VB('ἔλαβον','λαμβάνω','received','aor','act','ind',3,'p'),A(W('αὐτόν','αὐτός','him','pron',{c:'a',n:'s',gd:'m',per:3}),','),VB('ἔδωκεν','δίδωμι','gave','aor','act','ind',3,'s'),W('αὐτοῖς','αὐτός','to them','pron',{c:'d',n:'p',gd:'m',per:3}),NN('ἐξουσίαν','ἐξουσία','right','a','s','f'),NN('τέκνα','τέκνον','children','a','p','n'),NN('θεοῦ','θεός','of God','g','s','m'),A(IF('γενέσθαι','γίνομαι','to become','aor','mid',{dep:true}),','),AR('τοῖς','d','p','m'),PT('πιστεύουσιν','πιστεύω','believing','pres','act','d','p','m'),EIS,TO,NN('ὄνομα','ὄνομα','name','a','s','n'),A(AUTOU,',')],
+  faq:[
+   ['What is ὅσοι?','A relative word meaning “as many as”. It is nominative plural masculine and the subject of ἔλαβον. It has a rough breathing, so it is read “hosoi”. The “but” word δὲ is grave because ἔλαβον follows.'],
+   ['What is γενέσθαι?','An aorist middle infinitive of γίνομαι (deponent): “to become”. It completes ἐξουσίαν: “the right to become”. An infinitive has tense and voice but no person or number. The ending -σθαι is the middle ending.'],
+   ['What is τοῖς πιστεύουσιν?','The article with a present active participle, dative plural masculine, works like a noun: “to those who believe”. The present tense shows continuing belief. It stands in apposition to αὐτοῖς.'],
+   ['How is ἔδωκεν formed?','Aorist active indicative 3rd singular of δίδωμι, “gave”. The ἐ- is the augment and the κ is the tense marker of this verb’s aorist (a “kappa aorist”).']
+  ]},
+13:{en:'who were born not of blood, nor of the will of the flesh, nor of the will of man, but of God.',
+  words:[W('οἳ','ὅς','who','rel',{c:'n',n:'p',gd:'m'}),OUK,PP('ἐξ','ἐκ','from','genitive',{atonic:true}),NN('αἱμάτων','αἷμα','blood','g','p','n'),OUDEN,EK,THELEMA,NN('σαρκὸς','σάρξ','flesh','g','s','f'),OUDEN,EK,THELEMA,NN('ἀνδρὸς','ἀνήρ','man','g','s','m'),ALL,EK,NN('θεοῦ','θεός','God','g','s','m'),A(VB('ἐγεννήθησαν','γεννάω','were born','aor','pas','ind',3,'p'),'.')],
+  faq:[
+   ['What does ἐγεννήθησαν show?','Aorist passive indicative 3rd plural of γεννάω: “were born”. The passive voice means the subject receives the action. The -θη- is the aorist passive marker, -σαν is the 3rd plural ending, and ἐ- is the augment. The subject is οἳ, plural, referring back to those who believe.'],
+   ['Why ἐξ in one place and ἐκ in the others?','ἐκ becomes ἐξ before a word beginning with a vowel (αἱμάτων). Every use here takes the genitive: “out of”, “from”.'],
+   ['What is the breathing on αἱμάτων and οἳ?','Both are rough: “haimatōn” and “hoi”. οἳ is also grave, because οὐκ follows with no punctuation.'],
+   ['Why are οὐδὲ, σαρκὸς and ἀνδρὸς grave?','Each is followed by another word without punctuation, so the final acute became a grave.']
+  ]},
+14:{en:'And the Word became flesh and lived among us, and we saw his glory, glory as of a father’s only child, full of grace and truth.',
+  words:[{...KAI,g:'Καὶ'},O,LOGOS,NN('σὰρξ','σάρξ','flesh','n','s','f'),EGENETO,KAI,VB('ἐσκήνωσεν','σκηνόω','lived (pitched a tent)','aor','act','ind',3,'s'),en,A(W('ἡμῖν','ἐγώ','us','pron',{c:'d',n:'p',per:1}),','),KAI,VB('ἐθεασάμεθα','θεάομαι','we saw','aor','mid','ind',1,'p',{dep:true}),AR('τὴν','a','s','f'),NN('δόξαν','δόξα','glory','a','s','f'),A(AUTOU,','),NN('δόξαν','δόξα','glory','a','s','f'),W('ὡς','ὡς','as','adv',{atonic:true}),AJ('μονογενοῦς','μονογενής','only','g','s','m'),PP('παρὰ','παρά','from','genitive'),A(NN('πατρός','πατήρ','father','g','s','m'),','),AJ('πλήρης','πλήρης','full','n','s','m'),NN('χάριτος','χάρις','grace','g','s','f'),KAI,A(NN('ἀληθείας','ἀλήθεια','truth','g','s','f'),'.')],
+  faq:[
+   ['Which noun is the subject of σὰρξ ἐγένετο?','ὁ λόγος is the subject, because it has the article. σὰρξ is nominative too and says what the Word became. The verb is ἐγένετο again: aorist middle deponent, “became”. Compare ἦν in verse 1: an ongoing state there, a single event here.'],
+   ['What is ἐσκήνωσεν?','Aorist active indicative 3rd singular of σκηνόω, from σκηνή, “tent”: “pitched his tent”, “lived”. The ἐ- is the augment and -σεν is the aorist ending. ἐν ἡμῖν is “among us”: ἡμῖν is dative plural, 1st person, with a rough breathing (“hēmin”) and a circumflex.'],
+   ['What is ἐθεασάμεθα?','Aorist middle indicative 1st plural of θεάομαι, a deponent verb: “we saw”, “we beheld”. The ending -μεθα is the 1st plural middle ending. The word has six syllables, and the accent sits on the antepenult, the furthest back an accent can go.'],
+   ['What case is πλήρης?','Nominative singular masculine, so it most naturally describes ὁ λόγος. It stands next to genitive words, so some readers connect it with the glory instead. The genitives χάριτος and ἀληθείας tell you what it is full of.'],
+   ['Why is τὴν grave and παρὰ grave?','Each is followed by another word without punctuation. Before a comma the acute stays: πατρός.']
+  ]},
+15:{en:'John testifies about him and cries out, saying, “This was he of whom I said, ‘The one coming after me has come to be ahead of me, because he was before me.’”',
+  words:[NN('Ἰωάννης','Ἰωάννης','John','n','s','m'),VB('μαρτυρεῖ','μαρτυρέω','testifies','pres','act','ind',3,'s'),PERI,AUTOU,KAI,VB('κέκραγεν','κράζω','has cried out','perf','act','ind',3,'s',{note:'The perfect of κράζω works like a present: “cries out”.'}),A(PT('λέγων','λέγω','saying','pres','act','n','s','m'),'·'),OUTOS,HN,W('ὃν','ὅς','whom','rel',{c:'a',n:'s',gd:'m'}),A(VB('εἶπον','λέγω','I said','aor','act','ind',1,'s'),'·'),O,PP('ὀπίσω','ὀπίσω','after (behind)','genitive'),MOU,PT('ἐρχόμενος','ἔρχομαι','coming','pres','mid','n','s','m',{dep:true}),PP('ἔμπροσθέν','ἔμπροσθεν','in front of','genitive'),MOU,GEGONEN,OTI,AJ('πρῶτός','πρῶτος','first','n','s','m'),MOU,A(HN,'.')],
+  faq:[
+   ['What is κέκραγεν?','Perfect active indicative 3rd singular of κράζω, “cry out”. It has the perfect reduplication κε-. The perfect of this verb has a present sense: “cries out”. λέγων is a present active participle, nominative singular masculine, agreeing with Ἰωάννης: “saying”.'],
+   ['What is ὁ ὀπίσω μου ἐρχόμενος?','The article, a prepositional phrase and a participle together form a noun phrase: “the one coming after me”. ἐρχόμενος is a present participle, nominative singular masculine. ὀπίσω takes the genitive μου.'],
+   ['Why do ἔμπροσθέν and πρῶτός have two accents?','μου is an enclitic: it has no accent of its own and leans back on the word before it. When it follows a word with an accent on the antepenult (ἔμπροσθεν) or a circumflex on the penult (πρῶτος), that word gains an extra acute on its last syllable.'],
+   ['What are ὃν εἶπον and γέγονεν?','ὃν is a relative pronoun, accusative singular masculine, the object of εἶπον. εἶπον is aorist active indicative, 1st person singular, “I said”: the aorist of λέγω is built on another stem. γέγονεν is perfect: it has come to be, with the result continuing.']
+  ]},
+16:{en:'For from his fullness we have all received, grace in place of grace.',
+  words:[OTI,EK,TOUN,NN('πληρώματος','πλήρωμα','fullness','g','s','n'),AUTOU,W('ἡμεῖς','ἐγώ','we','pron',{c:'n',n:'p',per:1}),PANTES,A(VB('ἐλάβομεν','λαμβάνω','received','aor','act','ind',1,'p'),','),KAI,NN('χάριν','χάρις','grace','a','s','f'),PP('ἀντὶ','ἀντί','in place of','genitive'),A(NN('χάριτος','χάρις','grace','g','s','f'),'·')],
+  faq:[
+   ['Why is ἡμεῖς there at all?','The verb ἐλάβομεν already says “we”: the -μεν ending is 1st person plural. The pronoun ἡμεῖς (nominative plural, 1st person) adds emphasis: “we ourselves, all of us”. It has a rough breathing and a circumflex on its last syllable.'],
+   ['What is ἐλάβομεν?','Aorist active indicative 1st plural of λαμβάνω: “received”. The aorist stem is λαβ-, with the augment ἐ-.'],
+   ['What does ἀντὶ do?','ἀντί takes the genitive and means “in place of” or “instead of”: “grace in place of grace”. The accent is grave because χάριτος follows with no pause.'],
+   ['What does ὅτι do at the start?','It is a conjunction meaning “because” or “for”. It introduces a reason for what came before. It has a rough breathing: “hoti”.']
+  ]},
+17:{en:'For the law was given through Moses; grace and truth came through Jesus Christ.',
+  words:[OTI,O,NN('νόμος','νόμος','law','n','s','m'),PP('διὰ','διά','through','genitive'),NN('Μωϋσέως','Μωϋσῆς','Moses','g','s','m'),A(VB('ἐδόθη','δίδωμι','was given','aor','pas','ind',3,'s'),','),HE,NN('χάρις','χάρις','grace','n','s','f'),KAI,HE,NN('ἀλήθεια','ἀλήθεια','truth','n','s','f'),PP('διὰ','διά','through','genitive'),NN('Ἰησοῦ','Ἰησοῦς','Jesus','g','s','m'),NN('Χριστοῦ','Χριστός','Christ','g','s','m'),A(EGENETO,'.')],
+  faq:[
+   ['What is ἐδόθη?','Aorist passive indicative 3rd singular of δίδωμι: “was given”. The -θη- marks the aorist passive, and the subject ὁ νόμος receives the action. The second clause uses a different verb: ἐγένετο, “came to be”.'],
+   ['What do the two dots on Μωϋσέως mean?','That is a diaeresis. It tells you to pronounce the υ as a separate syllable instead of joining it to ω as a diphthong: Mō-y-sé-ōs.'],
+   ['What does διὰ do here?','With the genitive, διά means “through”. Μωϋσέως and Ἰησοῦ Χριστοῦ are both genitive singular masculine. Elision is optional: διὰ is not shortened before the name Ἰησοῦ, although it is before αὐτοῦ in verse 3.'],
+   ['The verb is singular but there are two subjects. Why?','A Greek verb often agrees with the nearer subject, or treats a pair as a unit. ἐγένετο is 3rd singular, and ἡ χάρις καὶ ἡ ἀλήθεια are both nominative singular feminine.']
+  ]},
+18:{en:'No one has ever seen God. The only God, who is in the Father’s bosom, has made him known.',
+  words:[NN('θεὸν','θεός','God','a','s','m'),W('οὐδεὶς','οὐδείς','no one','pron',{c:'n',n:'s',gd:'m'}),VB('ἑώρακεν','ὁράω','has seen','perf','act','ind',3,'s'),A(W('πώποτε','πώποτε','ever','adv'),'·'),AJ('μονογενὴς','μονογενής','only','n','s','m'),THEOS,O,PT('ὢν','εἰμί','being','pres','act','n','s','m',{note:'The present participle of εἰμί: “the one who is”.'}),EIS,TON,NN('κόλπον','κόλπος','bosom','a','s','m'),TOUM,NN('πατρὸς','πατήρ','Father','g','s','m'),EKEINOS,A(VB('ἐξηγήσατο','ἐξηγέομαι','made known','aor','mid','ind',3,'s',{dep:true}),'.')],
+  faq:[
+   ['Why is θεὸν first in the sentence?','Greek word order is flexible. θεὸν is accusative, the object, and it is placed first for emphasis. οὐδεὶς is nominative, the subject. ἑώρακεν is perfect active indicative 3rd singular of ὁράω: “has seen”, with the result continuing. It begins with a rough breathing, “heōraken”.'],
+   ['What is ὁ ὢν?','ὢν is the present active participle of εἰμί, nominative singular masculine. With ὁ it means “the one who is”. The present tense shows a continuing state. It has a smooth breathing (no “h”), and a grave because εἰς follows.'],
+   ['What is ἐξηγήσατο?','Aorist middle indicative 3rd singular of ἐξηγέομαι, a deponent verb: “explained”, “made known”. The English word “exegesis” comes from it. ἐκεῖνος, “that one”, is the subject.'],
+   ['Why do some Bibles say “Son” instead of “God”?','Manuscripts differ here. Some read μονογενὴς θεός (“only God”), others ὁ μονογενὴς υἱός (“the only Son”). Editors and translators choose between them, and a footnote in your Bible will usually say which.']
+  ]}
+};
+
+/* ---------- Explanations ---------- */
+const TENSE={pres:['Present','Action in progress or repeated'],impf:['Imperfect','Ongoing or repeated action in the past'],aor:['Aorist','Action seen as a whole, usually in the past'],perf:['Perfect','A past action whose result still stands'],fut:['Future','Action yet to happen']};
+const VOICE={act:['Active','The subject does the action'],mid:['Middle','The subject acts on or for itself'],pas:['Passive','The subject receives the action']};
+const MOOD={ind:['Indicative','States a fact or asks a question'],subj:['Subjunctive','Possibility or purpose, often after ἵνα']};
+const FORM={ptc:['Participle','A verbal adjective: “coming”, “having been sent”'],inf:['Infinitive','The verb as a noun: “to …”']};
+const CASE={n:['Nominative','Usually the subject, or what is said about the subject'],g:['Genitive','“of”: belonging, source or description'],d:['Dative','“to / for / in”: indirect object or location'],a:['Accusative','Direct object, or goal of movement']};
+const GEND={m:'Masculine',f:'Feminine',n:'Neuter'};
+const NUM={s:['Singular','one'],p:['Plural','more than one']};
+const PERS={1:['1st','I / we'],2:['2nd','you'],3:['3rd','he / she / it / they']};
+const POSLABEL={v:'Verb',n:'Noun',art:'Article',pron:'Pronoun',dem:'Demonstrative pronoun',rel:'Relative pronoun',adj:'Adjective',prep:'Preposition',conj:'Conjunction',adv:'Adverb'};
+
+function parseRows(w){
+  const r=[];
+  if(w.pos==='v'){
+    r.push(['Tense',...TENSE[w.t]]);
+    const vo=VOICE[w.v]; r.push(['Voice',vo[0]+(w.dep?' (deponent form)':''),vo[1]]);
+    if(w.m==='ptc'||w.m==='inf') r.push(['Form',...FORM[w.m]]); else r.push(['Mood',...MOOD[w.m]]);
+    if(w.m==='ptc'){
+      r.push(['Case',...CASE[w.c]]); r.push(['Number',...NUM[w.n]]); r.push(['Gender',GEND[w.gd],'']);
+    } else if(w.m!=='inf'){
+      r.push(['Person',PERS[w.p][0],PERS[w.p][1]]); r.push(['Number',...NUM[w.n]]);
+    }
+  } else if(w.c){
+    r.push(['Case',...CASE[w.c]]);
+    r.push(['Number',...NUM[w.n]]);
+    if(w.gd) r.push(['Gender',GEND[w.gd],'']);
+    if(w.per) r.push(['Person',PERS[w.per][0],PERS[w.per][1]]);
+  } else if(w.gov){
+    r.push(['Used with','The '+w.gov,'The word after it goes in this case']);
+  }
+  return r;
+}
+
+function breathingNote(a){
+  if(a.breathing==='rough') return 'Rough breathing (&#8190;): the word starts with an “h” sound'+(a.translit.toLowerCase().startsWith('rh')?' (“rh” for ρ).':'.');
+  if(a.breathing==='smooth') return 'Smooth breathing (&#8127;): the word starts with a vowel and no “h” sound.';
+  return 'No breathing mark: the word starts with a consonant, so none is needed.';
+}
+function accentNote(w,a,next){
+  if(a.accents.length>1){
+    const f=a.accents[0];
+    return `Two accents: ${f.type} on the ${POSN[a.n-1-f.i]||'earlier syllable'} and an extra acute on the ultima. A word takes the extra acute when an enclitic follows${next?` (here ${next.g})`:''}.`;
+  }
+  if(a.accentIdx<0&&a.elided) return 'No accent mark: the final vowel was dropped (elision), and the accent went with it.';
+  if(a.accentIdx<0&&w.enclitic) return `No accent mark. ${w.g} is an enclitic: it leans back on the word before it and gives up its own accent.`;
+  if(a.accentIdx<0){
+    return w.atonic?`No accent mark. ${w.g} is a proclitic: it has no accent of its own and leans on the word that follows.`:'No accent mark on this word.';
+  }
+  const name=POSN[a.fromEnd]||'earlier syllable';
+  if(a.accent==='acute'){
+    let s=`Acute accent (&#180;) on the ${name}. An acute can stand on any of the last three syllables.`;
+    if(a.fromEnd===0&&w.after) s+=' It stays acute on the last syllable because punctuation follows.';
+    return s;
+  }
+  if(a.accent==='grave'){
+    return `Grave accent (&#96;) on the ultima. A final acute is written as a grave when another word follows without a pause${next?` (here the next word is ${next.g})`:''}. Before punctuation it would stay acute.`;
+  }
+  let s=`Circumflex accent (&#8128;) on the ${name}. A circumflex needs a long vowel or diphthong and can stand only on the last two syllables.`;
+  if(a.n===1) s+=' In a one-syllable word it sits on the only vowel.';
+  else if(a.fromEnd===1) s+=' The last syllable is short, so the long second-to-last syllable takes a circumflex.';
+  return s;
+}
+function iotaNote(w,a){
+  if(!a.iota) return '';
+  return 'Iota subscript: a small iota written under the vowel. It is silent but part of the spelling (written “i” in the transliteration)'+(w.c==='d'?', and here it is part of the dative singular ending.':'.');
+}
+function sylHtml(a){
+  const lab=['third from last','second to last','last'];
+  return a.syl.map((s,i)=>{
+    const fe=a.n-1-i;
+    const txt=s.letters.map(L=>{
+      const str=(L.raw+L.marks.join('')).normalize('NFC');
+      const acc=L.marks.some(m=>m===D.acute||m===D.grave||m===D.circ);
+      const br=L.marks.some(m=>m===D.rough||m===D.smooth);
+      return `<span class="${acc?'acc ':''}${br?'br':''}">${str}</span>`;
+    }).join('');
+    const l=fe<=2?POSN[fe]:'earlier';
+    return `<div class="syl"><div class="st">${txt}</div><div class="sl">${l}</div></div>`;
+  }).join('');
+}
+//</core>
+
+/* ---------- UI ---------- */
+const PICK=Object.keys(VERSES).map(Number);
+const state={v:1,tab:'read',sel:null};
+const app=document.getElementById('app');
+const sheet=document.getElementById('sheet');
+
+function renderRead(){
+  const V=VERSES[state.v];
+  const picker=PICK.map(n=>`<button data-v="${n}" aria-pressed="${n===state.v}" aria-label="Verse ${n}">${n}</button>`).join('');
+  const words=V.words.map((w,i)=>{
+    const a=analyze(w.g);
+    return `<button class="word" data-i="${i}" aria-pressed="${state.sel===i}"><span class="g">${w.g}${w.after?`<span class="pn">${w.after}</span>`:''}</span><span class="t">${a.translit}</span><span class="e">${w.e}</span></button>`;
+  }).join('');
+  app.innerHTML=`<div class="picker" role="group" aria-label="Choose a verse">${picker}</div>
+  <div class="verse"><div class="vnum">${state.v}</div><div class="words">${words}</div></div>
+  <div class="english">${V.en}</div>
+  <p class="hint">Tap any Greek word to see its parsing, accent and breathing.</p>`;
+}
+function renderFaq(){
+  const V=VERSES[state.v];
+  const picker=PICK.map(n=>`<button data-v="${n}" aria-pressed="${n===state.v}" aria-label="Verse ${n}">${n}</button>`).join('');
+  const items=V.faq.map(([q,a])=>`<details><summary>${q}</summary><div class="body"><p>${a}</p></div></details>`).join('');
+  app.innerHTML=`<div class="picker" role="group" aria-label="Choose a verse">${picker}</div>
+  <h2>Questions about John 1:${state.v}</h2>${items}`;
+}
+function renderGuide(){
+  const G=(q,body)=>`<details><summary>${q}</summary><div class="body">${body}</div></details>`;
+  app.innerHTML=`<h2>Grammar guide</h2>`+
+  G('Tense: when and how the action happens',`<table>
+    <tr><td>Present</td><td>Action in progress or repeated</td></tr>
+    <tr><td>Imperfect</td><td>Ongoing or repeated action in the past</td></tr>
+    <tr><td>Aorist</td><td>Action seen as a whole, usually past</td></tr>
+    <tr><td>Perfect</td><td>A past action whose result still stands</td></tr>
+    <tr><td>Future</td><td>Action yet to happen</td></tr></table>`)+
+  G('Voice: who acts and who receives',`<table>
+    <tr><td>Active</td><td>The subject does the action</td></tr>
+    <tr><td>Middle</td><td>The subject acts on or for itself</td></tr>
+    <tr><td>Passive</td><td>The subject receives the action</td></tr></table>
+    <p style="margin-top:10px">A deponent verb has middle or passive forms but an active meaning.</p>`)+
+  G('Mood: how the speaker presents the action',`<table>
+    <tr><td>Indicative</td><td>A statement of fact, or a question</td></tr>
+    <tr><td>Imperative</td><td>A command</td></tr>
+    <tr><td>Subjunctive</td><td>Possibility, purpose or doubt</td></tr>
+    <tr><td>Optative</td><td>A wish or remote possibility</td></tr></table>
+    <p style="margin-top:10px">Two more verb forms appear in John 1. A <b>participle</b> is a verbal adjective (“coming”, “sent”): it has tense and voice, and case, number and gender, but no person. An <b>infinitive</b> is the verb as a noun (“to become”): it has no person or number.</p>`)+
+  G('Person and number',`<p>1st person is I or we, 2nd is you, and 3rd is he, she, it or they. Number is singular (one) or plural (more than one). A verb agrees with its subject in person and number.</p>`)+
+  G('Case: the job a noun does',`<table>
+    <tr><td>Nominative</td><td>Subject, or what is said about it</td></tr>
+    <tr><td>Genitive</td><td>“of”: belonging, source, description</td></tr>
+    <tr><td>Dative</td><td>“to / for / in”: indirect object, location</td></tr>
+    <tr><td>Accusative</td><td>Direct object, goal of movement</td></tr></table>`)+
+  G('Breathing marks',`<p><b>Smooth (&#8127;)</b>: a word starting with a vowel and no “h” sound.</p>
+    <p><b>Rough (&#8190;)</b>: a word starting with an “h” sound. A word starting with ρ also takes a rough breathing (“rh”).</p>
+    <p>On a diphthong the mark sits on the second vowel. On a capital letter it sits before the letter.</p>`)+
+  G('Accent marks',`<p><b>Acute (&#180;)</b>: can stand on any of the last three syllables.</p>
+    <p><b>Grave (&#96;)</b>: only on the last syllable. It replaces a final acute when another word follows without punctuation.</p>
+    <p><b>Circumflex (&#8128;)</b>: only on a long vowel or diphthong, in the last two syllables.</p>
+    <p>The last syllable is the ultima, the one before it is the penult, and the one before that is the antepenult.</p>`)+
+  G('Words with no accent of their own',`<p><b>Proclitics</b> lean forward on the next word and have no accent: ὁ, ἡ, οἱ, ἐν, εἰς, ἐκ, ὡς, οὐ.</p>
+    <p><b>Enclitics</b> lean back on the previous word and give up their accent, such as μου. A word before an enclitic may gain an extra acute on its last syllable.</p>
+    <p><b>Elision</b> drops a final vowel before a word that begins with a vowel. An apostrophe marks it: δι᾽, ἀλλ᾽.</p>
+    <p>οὐ becomes οὐκ before a smooth-breathed vowel and οὐχ before a rough-breathed one.</p>`)+
+  G('Are the accents and breathings in the original?',`<p>The earliest New Testament manuscripts mostly have none of these marks. Later scribes and editors added them to record how words were read. Courses differ on whether to pronounce the accents, but the marks are still very useful for telling words apart and for parsing.</p>`)+
+  G('How the transliteration works',`<p>η is ē and ω is ō. θ is th, φ is ph, χ is ch, ψ is ps. γ before γ, κ, ξ or χ is n. A rough breathing is h, and ρ with rough breathing is rh. An iota subscript is written i. Accents are not shown in the transliteration.</p>`)+
+  G('About this test version',`<p>This build contains John 1:1–18. Transliteration, syllable splitting, accents and breathings are worked out by the app from the Greek itself. The parsing, glosses and FAQ answers were written by hand for these verses, so please report anything that looks wrong. The Greek text follows a traditional printed form, and a few verses (such as 1:3 and 1:18) have variants in other editions.</p>`);
+}
+function render(){
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===state.tab));
+  if(state.tab==='read') renderRead(); else if(state.tab==='faq') renderFaq(); else renderGuide();
+}
+function openSheet(i){
+  const V=VERSES[state.v]; const w=V.words[i]; const next=V.words[i+1];
+  const a=analyze(w.g);
+  state.sel=i;
+  const rows=parseRows(w).map(([k,v,e])=>`<div class="row"><dt>${k}</dt><dd>${v}${e?`<span>${e}</span>`:''}</dd></div>`).join('');
+  const notes=[w.note,iotaNote(w,a),a.elided?'Elision: the final vowel was dropped before a word that begins with a vowel. The apostrophe marks the loss.':''].filter(Boolean).map(n=>`<p class="note">${n}</p>`).join('');
+  sheet.innerHTML=`<div class="sheet-in">
+    <div class="s-head"><div><div class="s-greek">${w.g}</div><div class="s-sub"><i>${a.translit}</i>, “${w.e}”</div><div class="s-sub">${POSLABEL[w.pos]}. Dictionary form: <span class="greekinline">${w.l}</span></div></div>
+    <button class="close" id="close">Close</button></div>
+    <div class="s-sec"><h3>Parsing</h3><dl class="parse">${rows||'<p class="note">Not inflected, so there is nothing to parse.</p>'}</dl>${notes}</div>
+    <div class="s-sec"><h3>Accent and breathing</h3>
+      <div class="sylrow">${sylHtml(a)}</div>
+      <p class="legend"><span class="acc">Red</span> letters carry an accent. <span class="br">Underlined</span> letters carry a breathing.</p>
+      <p class="note">${breathingNote(a)}</p>
+      <p class="note">${accentNote(w,a,next)}</p>
+    </div></div>`;
+  sheet.classList.add('open'); sheet.scrollTop=0;
+  document.body.classList.add('sheet-open');
+  document.querySelectorAll('.word').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.i===i)));
+}
+function closeSheet(){
+  state.sel=null; sheet.classList.remove('open'); document.body.classList.remove('sheet-open');
+  document.querySelectorAll('.word').forEach(b=>b.setAttribute('aria-pressed','false'));
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button'); if(!t) return;
+  if(t.dataset.tab){ state.tab=t.dataset.tab; closeSheet(); render(); window.scrollTo(0,0); }
+  else if(t.dataset.v){ state.v=+t.dataset.v; closeSheet(); render(); }
+  else if(t.classList.contains('word')){ openSheet(+t.dataset.i); }
+  else if(t.id==='close'){ closeSheet(); }
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheet(); });
+render();
+
+if('serviceWorker' in navigator && /^https?:/.test(location.protocol)){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
